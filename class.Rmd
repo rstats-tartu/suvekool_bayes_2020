@@ -1,0 +1,49 @@
+---
+title: "Class_HF"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(brms)
+library(bayesplot)
+library(broom)
+library(tidybayes)
+```
+
+
+```{r}
+df <- read_delim("data/korrektne_valim_short.csv", 
+                 delim = ";", 
+                 escape_double = FALSE, 
+                 trim_ws = TRUE)
+```
+
+
+```{r}
+df <- df %>% 
+  mutate(PT_int = postacute_therapy / (postacute_LOS / 7) )
+```
+
+```{r}
+df %>% 
+  count(county) %>% 
+  arrange(n)
+```
+
+```{r}
+df <- df %>% 
+  filter(county != "homeless") %>% 
+  mutate(age_st = (age - mean(age)) / (2 * sd(age)),
+                    comorbidity_st = (comorbidity - mean(comorbidity)) / (2 * sd(comorbidity)),
+                    acute_LOS_st = (acute_LOS - mean(acute_LOS)) / (2 * sd(acute_LOS)),
+                    yr_st = (year - mean(year)) / (2 * sd(year)),
+                    yr_centered = year - mean(year),
+                    postacute_LOS_st = (postacute_LOS - mean(postacute_LOS)) / (2 * sd(postacute_LOS)))
+
+df_log_pos <- df %>% 
+  filter(postacute_therapy > 0) %>% 
+  mutate(teraapia_log = log2(postacute_therapy))
+```
+
+
