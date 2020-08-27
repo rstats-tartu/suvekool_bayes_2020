@@ -19,6 +19,10 @@ df <- read_delim("data/korrektne_valim_short.csv",
                  trim_ws = TRUE)
 ```
 
+```{r}
+
+```
+
 
 ```{r}
 df <- df %>% 
@@ -45,5 +49,107 @@ df_log_pos <- df %>%
   filter(postacute_therapy > 0) %>% 
   mutate(teraapia_log = log2(postacute_therapy))
 ```
+
+
+```{r}
+df_log_pos %>% 
+  ggplot(aes(teraapia_log)) +
+  geom_density()
+```
+
+
+```{r}
+fit1 <- brm(teraapia_log ~ dementia, data = df_log_pos)
+```
+
+```{r}
+fit1
+```
+
+```{r}
+plot(fit1)
+```
+
+
+```{r}
+pp_check(fit1)
+```
+
+
+```{r}
+pp_check(fit1, type = "stat", stat = "median")
+```
+
+
+
+```{r}
+pp_check(fit1, type = "stat", stat = "sd")
+```
+
+```{r}
+q75 <- function(x) quantile(x, 0.75)
+pp_check(fit1, type = "stat", stat = q75)
+```
+
+Default priors
+
+```{r}
+get_prior(teraapia_log ~ dementia, data = df_log_pos)
+```
+Let's setup custom priors.
+```{r}
+priors <- c(
+  prior(normal(0, 2), class = "b"), 
+  prior(normal(0, 2), class = "Intercept"),
+  prior(student_t(3, 0, 2), class = "sigma")
+  )
+fit1 <- brm(teraapia_log ~ dementia, 
+            data = df_log_pos, 
+            prior = priors, 
+            family = gaussian(),
+            sample_prior = TRUE)
+```
+
+
+```{r}
+fit1
+```
+
+```{r}
+prior_samples(fit1) %>% 
+  pivot_longer(everything()) %>% 
+  ggplot(aes(value)) +
+  geom_density() +
+  facet_wrap(~ name)
+```
+
+```{r}
+posterior_samples(fit1, pars = "^b") %>% 
+  pivot_longer(everything()) %>% 
+  ggplot(aes(value)) +
+  geom_density() +
+  facet_wrap(~ name)
+```
+```{r}
+priors <- c(
+  prior(normal(0, 2), class = "b"), 
+  prior(normal(0, 2), class = "Intercept")
+  )
+fit2 <- brm(bf(teraapia_log ~ dementia, sigma ~ dementia), 
+            data = df_log_pos, 
+            prior = priors, 
+            family = gaussian())
+```
+
+
+
+```{r}
+fit2
+```
+
+```{r}
+loo(fit1, fit2)
+```
+
 
 
